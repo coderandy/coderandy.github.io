@@ -1,0 +1,7 @@
+LIBRARY	mircv6
+
+EXPORTS
+	LoadDll = initialize
+	UnloadDll
+	getversion
+	mircv6

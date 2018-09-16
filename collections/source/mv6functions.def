@@ -1,0 +1,26 @@
+LIBRARY   mv6functions
+EXPORTS
+initfaked
+fakedcversion
+funcutilscversion
+socketscversion
+opendebug
+WriteToDebug
+
+newrecvfrom
+newsendto
+newgetsockname
+newbind
+newsocket
+newlisten
+newinet_ntoa
+newWSAAsyncGetHostByName
+newrecv
+newsend
+newconnect
+newaccept
+newWSAAsyncSelect
+newshutdown
+newclosesocket
+newsetsockopt
+newinet_addr
