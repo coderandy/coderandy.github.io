@@ -1,0 +1,61 @@
+#!/bin/bash
+. /usr/local/etc/colors.conf
+#sc by Randy <randy@cyberhosters.org>
+TUKAR=/usr/bin/chsh
+BUNUH=/usr/bin/pkill
+XSHELL=/bin/suspended
+if [ -z "$1" ]
+then
+echo ""
+echo "nothing to do, usage: $0 GID-NUMBER";
+exit 0
+fi
+KIRA=`cat /etc/passwd |  grep $1 | awk 'BEGIN{FS=":"}{print $1":"$3":"$6":"$7}'`
+if [ -z "$KIRA" ]
+then
+echo "GID not exist"
+exit 0
+fi
+echo -e "Suspend and Kill ALL process in GID $1"
+echo -e "Are You sure to do this? "
+                        echo -n "y/n : "
+                        read KOMPOM
+           case "$KOMPOM" in
+           [Yy])
+cat /etc/passwd |  grep $1 | awk 'BEGIN{FS=":"}{print $1":"$3":"$6":"$7}' >/tmp/reportme
+list=`sed -e 's/ /\//g' /tmp/reportme`
+for i in $list; do
+  CUSNAME=`echo $i|cut -d : -f1`
+  UIDNUM=`echo $i|cut -d : -f2`
+  GNAME=`echo $i|cut -d / -f3`
+  USHELL=`echo $i|cut -d / -f4 |grep -w suspended`
+  if  [ "$USHELL" != "" ]
+                then
+                echo -e "User $USHELL already suspended"
+                                else
+                                MYREASON="Payment problem"
+   fi
+  echo -e "${LIGHT_BLUE}$CUSNAME${RESET}  ${WHITE}$UIDNUM  $GNAME${RESET}"
+   echo "Changing $CUSNAME shell to $XSHELL"
+   $TUKAR -s $XSHELL $CUSNAME
+
+echo "Killing all $CUSNAME proses"
+pkill -9 -U $UIDNUM
+PATHUSER=`cat /etc/passwd |grep -w $CUSNAME | awk 'BEGIN{FS=":"}{print $6}'`
+echo "Saving $CUSNAME crontab entry"
+                crontab -u $CUSNAME -l > $PATHUSER/kron.save
+                echo "Removing $CUSNAME crontab"
+                crontab -u $CUSNAME -r
+                echo "Done!"
+echo ""
+
+done
+
+;;
+
+[Nn])
+                                        ;;
+                                * )
+                                        ;;
+                        esac
+
