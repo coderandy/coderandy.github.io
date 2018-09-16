@@ -1,0 +1,156 @@
+#!/usr/bin/perl -w
+### Just another perl bot
+use strict;
+$|++;
+eval { require Crypt::ircBlowfish; };
+import Crypt::ircBlowfish unless $@;
+
+### ENCRYPTION CONFIG
+my $usefish='1' unless $@;
+my $fishkey = "ch4ngeme!!!";
+
+### IRC CONFIG
+my $NICK = 'EagleEye';
+my $CONNECT = {
+   LocalAddr => '103.253.146.231',
+   Username => 'randy',
+   Server => 'irc.coders.ph',
+   Port => '6667',
+   UseSSL => true,
+   useipv6 => false,
+   # Password => 'PortPassword',
+   Nick => $NICK,
+   Ircname => 'Mystagic Watcher',
+};
+my $CHANNEL = '#Mystagic';
+my $CHANKEY = 'Eden';
+my $IRC_ALIAS = $NICK;
+
+### LOGTAIL CONFIG
+my %FOLLOWS = (
+  bash => "/var/log/bash.log",
+  sudo => "/var/log/sudo.log",
+  root => "/var/log/root.log",
+);
+
+### END CONFIG
+
+my $SKIPPING = 0; # if skipping, how many we've done
+my $SEND_QUEUE;   # cache
+
+use POE qw(Component::IRC Wheel::FollowTail);
+
+POE::Component::IRC->new($IRC_ALIAS);
+
+POE::Session->create (inline_states => {
+  irc_disconnected => \&bot_reconnect,
+  irc_error        => \&bot_reconnect,
+  irc_socketerr    => \&bot_reconnect,
+  autoping         => \&bot_do_autoping,
+  _start => sub {
+    $_[KERNEL]->post($IRC_ALIAS => register => 'all');
+    $_[KERNEL]->post($IRC_ALIAS => connect => $CONNECT);
+  },
+  irc_255 => sub {
+    my ($kernel, $heap) = @_[KERNEL, HEAP];
+    $heap->{seen_traffic} = 1;
+    $kernel->delay(autoping => 300);
+    $_[KERNEL]->post($IRC_ALIAS => join => $CHANNEL, $CHANKEY);
+    $_[KERNEL]->yield("heartbeat");
+    $_[KERNEL]->yield("my_add", $_) for keys %FOLLOWS;
+  },
+  (map {
+   ;"irc_$_" => sub { }}
+   qw(join public
+   connected snotice ctcp_action ping notice mode part quit
+   001 002 003 004 005 250 251 252 253 254 265 266 332 333 353 366 372 375 376)
+  ),
+  _child => sub {},
+  _default => sub {
+    printf "%s: session %s caught an unhandled %s event.\n", scalar localtime(), $_[SESSION]->ID, $_[ARG0];
+    print "The $_[ARG0] event was given these parameters: ", join(" ", map({"ARRAY" eq ref $_ ? "[@$_]" : "$_"} @{$_[ARG1]})), "\n";
+    0; # false for signals
+  },
+  my_add => sub {
+    my $trailing = $_[ARG0];
+    my $session = $_[SESSION];
+    POE::Session->create (inline_states => {
+      _start => sub {
+        $_[HEAP]->{wheel} = POE::Wheel::FollowTail->new ( Filename => $FOLLOWS{$trailing}, InputEvent => 'got_line', );
+      },
+      got_line => sub {
+        $_[KERNEL]->post($session => my_tailed => time, $trailing, $_[ARG0]);
+      },
+    },);
+  },
+  my_tailed => sub {
+    my ($time, $file, $line) = @_[ARG0..ARG2];
+    ## $time will be undef on a probe, or a time value if a real line
+    ## PoCo::IRC has throttling built in, but no external visibility
+    ## so this is reaching "under the hood"
+    $SEND_QUEUE ||= $_[KERNEL]->alias_resolve($IRC_ALIAS)->get_heap->{send_queue};
+
+    ## handle "no need to keep skipping" transition
+    if ($SKIPPING and @$SEND_QUEUE < 1) {
+      $_[KERNEL]->post($IRC_ALIAS => privmsg => $CHANNEL => "[discarded $SKIPPING messages]");
+      $SKIPPING = 0;
+    }
+    ## handle potential message display
+    if ($time) {
+      if ($SKIPPING or @$SEND_QUEUE > 3) { # 3 msgs per 10 seconds
+        $SKIPPING++;
+      } else {
+        my $color = "14";
+        my @time = localtime $time;
+        if ($file eq "sudo") {
+          $color = "8";
+        }
+        if ($file eq "bash") {
+          $color = "14";
+          # $line = substr($line, 28);
+        }
+        if ($file eq "root") {
+          $color = "7";
+          $line = substr($line, 28);
+        }
+        my $cleartext = '';
+        if (defined($usefish) && $fishmsg eq 1) {
+          my $blowfish = new Crypt::ircBlowfish;
+          my $encrypted_message = '';
+          $blowfish->set_key($fishkey);
+          my $prefix = '+OK ';
+          $cleartext = sprintf "\00310%02d:%02d:%02d:\002\00315 %s \002: \003%s %s ", ($time[2] + 11) % 12 + 1, $time[1], $time[0], $file, $color, $line;
+          $encrypted_message = $prefix . $blowfish->encrypt($cleartext);
+          $_[KERNEL]->post($IRC_ALIAS => privmsg => $CHANNEL => $encrypted_message);
+        } else {
+          $cleartext = sprintf "\00310%02d:%02d:%02d:\002\00315 %s \002: \003%s %s ", ($time[2] + 11) % 12 + 1, $time[1], $time[0], $file, $color, $line;
+          $_[KERNEL]->post($IRC_ALIAS => privmsg => $CHANNEL => $cleartext);
+        }
+      }
+    }
+    ## handle re-probe/flush if skipping
+    if ($SKIPPING) {
+      $_[KERNEL]->delay($_[STATE] => 0.5); # $time will be undef
+    }
+  },
+  my_heartbeat => sub {
+    $_[KERNEL]->yield(my_tailed => time, "heartbeat", "Specified logs are being monitored.");
+    $_[KERNEL]->delay($_[STATE] => 3600);
+  }
+},);
+
+sub bot_do_autoping {
+  my ($kernel, $heap) = @_[KERNEL, HEAP];
+  $kernel->post($IRC_ALIAS => userhost => $NICK) unless $heap->{seen_traffic};
+  $heap->{seen_traffic} = 0;
+  $kernel->delay(autoping => 300);
+}
+
+sub bot_reconnect {
+  my $kernel = $_[KERNEL];
+  $kernel->delay(autoping => undef);
+  $kernel->delay(connect  => 60);
+}
+
+# START
+POE::Kernel->run;
