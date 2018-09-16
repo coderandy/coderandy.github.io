@@ -1,0 +1,3 @@
+# CyberHosters IPFW sysban at table 47
+# Mass SYN_RCVD ban recorded at table 47
+for ip in `netstat -an | grep SYN_RCVD | awk '{print $5}' | cut -d . -f1,2,3,4 | sort | uniq | sort -n`;do ipfw table 47 add $ip;done
