@@ -1,0 +1,4 @@
+#!/bin/sh
+ipfw table 5 list | awk '{print $1}' | sed s/\\/.*//g | sort | uniq | sort -n > table5.list
+ipfw table 47 list | awk '{print $1}' | sed s/\\/.*//g | sort | uniq | sort -n > table47.list
+ipfw table 47 list | awk '{print $1}' | sort | grep -v "/32" > table47wide.list
