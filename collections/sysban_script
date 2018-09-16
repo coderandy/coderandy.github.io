@@ -1,0 +1,46 @@
+#!/bin/sh
+####################################################################################################
+## Sysban Script
+## Randy R. <randy@coders.ph>
+## Configuration
+SPATH="/home/randy/sysban"
+MONIP="192.168.22.3"
+####################################################################################################
+if [ -f "$SPATH/banned.txt" ]; then
+  chmod 600 $SPATH/banned.txt
+else
+  touch $SPATH/banned.txt
+  chmod 600 $SPATH/banned.txt
+fi
+if [ ! -f "$SPATH/tmp-analysis.txt" ]; then
+  touch $SPATH/tmp-analysis.txt
+fi
+if [ -f "$SPATH/tmp-analysis.txt" ]; then
+  chmod 600 $SPATH/tmp-analysis.txt
+fi
+IPS=`netstat -nW | grep SYN_RCVD | grep "$MONIP" | sort | awk '{print $5}' | sed -e 's/\.\([0-9]\{1,6\}\)$//g' | uniq`
+for ip in $IPS
+do
+  chk=`netstat -an | grep SYN_RCVD | grep "$MONIP" | grep -c "$ip"`
+  syn=`grep -c "$ip" $SPATH/tmp-analysis.txt`
+  if [ "$syn" -ge 1 -o "$chk" -gt 1 ]; then
+    echo "$ip" >> $SPATH/banned.txt
+    echo " * Blocking SYN-Flood from: $ip ($chk)"
+    ipfw table 47 add $ip >/dev/null 2>&1
+    cat $SPATH/tmp-analysis.txt | grep -v "$ip" | sort >> $SPATH/tmp-analysis.tmp
+  fi
+  if [ "$chk" -eq 1 ]; then
+    echo "$ip" >> $SPATH/tmp-analysis.txt
+  fi
+done
+if [ -f "$SPATH/tmp-analysis.txt" -a -f "$SPATH/tmp-analysis.tmp" ]; then
+  rm $SPATH/tmp-analysis.txt && mv $SPATH/tmp-analysis.tmp $SPATH/tmp-analysis.txt
+fi
+####################################################################################################
+## Sort banlist
+if [ -f "$SPATH/banned.txt" ]; then
+  cat $SPATH/banned.txt | sort | uniq > $SPATH/banned.txt.sort
+  mv $SPATH/banned.txt.sort $SPATH/banned.txt
+  chmod 600 $SPATH/banned.txt
+fi
+####################################################################################################
