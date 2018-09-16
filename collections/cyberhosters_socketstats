@@ -1,0 +1,20 @@
+#!/usr/local/bin/zsh
+# ©2009 Randy (randy@cyberhosters.org)
+if [ "$1" != "" ]; then
+ DATA=`sockstat | grep tcp | grep -i "${1}"`
+ if [ "$DATA" != "" ]; then
+#  USER=`echo $DATA | awk '{print $1}'`
+#  LISTEN=`echo $DATA | awk '{print $7}'`
+#  if [ "$USER" != "root" -a "$LISTEN" != "*:*" ]; then
+   SOCKETS=`echo "$DATA" | awk '{print $6 $7}' | grep -v "*:*" | wc -l | sed "s/ //g"`
+   UNIQUE=`echo "$DATA" | awk '{print $1}' | uniq | wc -l | sed "s/ //g"`
+#  else
+ #  SOCKETS=0
+ #  UNIQUE=0
+#  fi
+ else
+  SOCKETS=0
+  UNIQUE=0
+ fi
+fi
+echo "$UNIQUE $SOCKETS"
