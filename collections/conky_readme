@@ -1,0 +1,22 @@
+# Guide to install conky gui desktop script for raspberry pi model b+
+# Written by Randy R. <randy@coders.ph>
+
+sudo apt-get install conky -y
+wget -O /home/pi/.conkyrc https://raw.githubusercontent.com/coderandy/coderandy.github.io/master/collections/conkyrc
+
+sudo nano /usr/bin/conky.sh
+
+#!/bin/sh
+(sleep 10s && conky) &
+exit 0
+
+sudo chmod +x /usr/bin/conky.sh
+sudo nano /etc/xdg/autostart/conky.desktop
+
+[Desktop Entry]
+Name=conky
+Type=Application
+Exec=sh /usr/bin/conky.sh
+Terminal=false
+Comment=system monitoring tool.
+Categories=Utility;
