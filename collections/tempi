@@ -1,0 +1,7 @@
+#!/bin/bash
+# Script for Raspberry Pi GPU/CPU Temperature Monitory
+# Put in /bin for global exec and chmod +x
+# Randy R. <randy@coders.ph>
+
+cpu=$(</sys/class/thermal/thermal_zone0/temp)
+echo "GPU $(/opt/vc/bin/vcgencmd measure_temp) | CPU temp=$((cpu/1000))'C | Core $(/opt/vc/bin/vcgencmd measure_volts core)"
