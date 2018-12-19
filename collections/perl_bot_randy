@@ -20,10 +20,10 @@ my $CONNECT = {
    useipv6 => false,
    # Password => 'PortPassword',
    Nick => $NICK,
-   Ircname => 'Mystagic Watcher',
+   Ircname => 'A deranged product of evil coders',
 };
-my $CHANNEL = '#Mystagic';
-my $CHANKEY = 'Eden';
+my $CHANNEL = '#coders';
+my $CHANKEY = 'meh';
 my $IRC_ALIAS = $NICK;
 
 ### LOGTAIL CONFIG
