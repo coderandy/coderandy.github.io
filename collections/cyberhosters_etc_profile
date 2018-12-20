@@ -1,0 +1,52 @@
+LIMITUSER=$USER
+if [ -e "/usr/bin/whoami" ]; then
+  LIMITUSER=`/usr/bin/whoami`
+fi
+if [ "$LIMITUSER" != "root" ]; then
+  ulimit -n 100 -u 20 -m 200000 -d 200000 -s 8192 -c 200000 -v 200000
+2>/dev/null
+else
+  ulimit -n 4096 -u 14335 -m unlimited -d unlimited -s 8192 -c 1000000
+-v unlimited 2>/dev/null
+fi
+
+IGNOREEOF=1
+export TERM="xterm-256color"
+export EDITOR="nano"
+export LESS="R E"
+export PAGER="less"
+export BLOCKSIZE="K"
+export LSCOLORS=ExGxFfdxCxegDxBbGeDdCc
+export CLICOLOR=1
+
+nano() { /usr/local/bin/nano -w $1 && /usr/bin/clear || /usr/bin/clear ;
+} ; readonly nano
+pico() { /usr/local/bin/nano -w $1 && /usr/bin/clear || /usr/bin/clear ;
+} ; readonly pico
+
+alias ll='/bin/ls -GFalh'
+alias lo='/bin/ls -GFaloh'
+alias lio='/bin/ls -GFaloih'
+alias ls='/bin/ls -GFah'
+alias df='df -H'
+alias dhd='du -h -d 0'
+alias dhd1='du -h -d 1'
+alias h='history'
+alias make='cd .;make'
+alias gmake='cd .;gmake'
+
+if [ `/usr/bin/id -u` -eq 0 ]; then
+  export
+PS1='\[\e[m\]\[\e[1;31m\]\[\016\]l\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\u\[\033[1;36m\]@\[\033[1;37m\]\h\[\e[m\]\[\e[1;31m\])\[\016\]q\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\d\[\e[m\]\[\e[1;31m\])\[\016\]q\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\@\[\e[m\]\[\e[1;31m\])\[\016\]q\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\!\[\e[m\]\[\e[1;31m\])\[\016\]q\[\017\]\[\016\]q\[\017\]\[\016\]k\[\017\]\n\[\e[m\]\[\e[1;31m\]\[\016\]m\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]${PWD}\[\e[m\]\[\e[1;31m\])\[\016\]q\[\017\]>\[\033[0m\]';
+else
+  alias w='echo -e "\e[1;32mUser Information\e[0;0m"; /usr/bin/w `whoami`'
+  alias who='echo -e "\e[1;32mUser Information\e[0;0m"; /usr/bin/who2 `whoami`'
+  alias last='echo -e "\e[1;32mUser Details \e[0;0m"; /usr/bin/last `whoami`'
+  export
+PS1='\[\e[m\]\[\e[1;34m\]\[\016\]l\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\u\[\033[1;36m\]@\[\033[1;37m\]\h\[\e[m\]\[\e[1;34m\])\[\016\]q\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\d\[\e[m\]\[\e[1;34m\])\[\016\]q\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\@\[\e[m\]\[\e[1;34m\])\[\016\]q\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]\!\[\e[m\]\[\e[1;34m\])\[\016\]q\[\017\]\[\016\]q\[\017\]\[\016\]k\[\017\]\n\[\e[m\]\[\e[1;34m\]\[\016\]m\[\017\]\[\016\]q\[\017\](\[\e[m\]\[\e[1;37m\]${PWD}\[\e[m\]\[\e[1;34m\])\[\016\]q\[\017\]>\[\033[0m\]';
+fi
+export PATH=$PATH:/usr/uscr
+export SHELL=/usr/local/bin/bash
+
+/bin/ansiifix
+/bin/pasok
