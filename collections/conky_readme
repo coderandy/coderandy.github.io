@@ -18,5 +18,4 @@ Name=conky
 Type=Application
 Exec=sh /usr/bin/conky.sh
 Terminal=false
-Comment=system monitoring tool.
 Categories=Utility;
